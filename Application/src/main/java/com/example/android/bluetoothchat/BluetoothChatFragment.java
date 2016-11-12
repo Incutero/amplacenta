@@ -85,6 +85,12 @@ public class BluetoothChatFragment extends Fragment {
      */
     private BluetoothChatService mChatService = null;
 
+    private boolean isMaster;
+
+    public void setIsMaster(boolean isMaster) {
+        this.isMaster = isMaster;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -180,7 +186,7 @@ public class BluetoothChatFragment extends Fragment {
         });
 
         // Initialize the BluetoothChatService to perform bluetooth connections
-        mChatService = new BluetoothChatService(getActivity(), mHandler);
+        mChatService = new BluetoothChatService(getActivity(), mHandler, isMaster);
 
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer("");
