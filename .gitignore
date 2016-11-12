@@ -2,6 +2,9 @@
 .gradle/
 build/
 Application/build/
+amplacenta.iml
 Application/Application.iml
 local.properties
+Application/gradle/
+Application/gradlew*
 

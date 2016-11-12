@@ -19,10 +19,13 @@
     <!--  BluetoothChat -->
     <string name="send">Send</string>
     <string name="not_connected">You are not connected to a device</string>
+    <string name="host_cannot_send_message">Your party sucks</string>
     <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
     <string name="title_connecting">connecting...</string>
     <string name="title_connected_to">connected to <xliff:g id="device_name">%1$s</xliff:g></string>
+    <string name="host_title_connected_to">connected to <xliff:g id="num_devices">%1$s</xliff:g> guests</string>
     <string name="title_not_connected">not connected</string>
+    <string name="connection_busy">host is busy with another connection</string>
 
     <!--  DeviceListActivity -->
     <string name="scanning">scanning for devices...</string>
