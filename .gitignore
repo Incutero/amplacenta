@@ -3,4 +3,5 @@
 build/
 Application/build/
 Application/Application.iml
+local.properties
 
