@@ -148,8 +148,8 @@ public class GuestService {
 
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device);
-        mConnectThread.start();
         setState(STATE_CONNECTING);
+        mConnectThread.start();
     }
 
     /**

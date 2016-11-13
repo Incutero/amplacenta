@@ -141,8 +141,8 @@ public class HostService {
 
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device);
-        mConnectThread.start();
         setState(STATE_CONNECTING);
+        mConnectThread.start();
         return true;
     }
 
@@ -207,11 +207,6 @@ public class HostService {
      * @see ConnectedThread#write(byte[])
      */
     public void write(byte[] out) {
-        // Synchronize a copy of the ConnectedThread
-        if (mState != STATE_LISTEN) {
-            return;
-        }
-        // Perform the write unsynchronized
         for (ConnectedThread connectedThread : mConnectedThreads) {
             connectedThread.write(out);
         }
@@ -270,10 +265,10 @@ public class HostService {
             Log.d(TAG, "BEGIN mAcceptThread" + this);
             setName("AcceptThread");
 
-            BluetoothSocket socket = null;
-
             // Listen to the server socket if we're not connected
-            while (mState != STATE_CONNECTING) {
+            while (true) {
+                boolean quit = false;
+                BluetoothSocket socket;
                 try {
                     // This is a blocking call and will only return on a
                     // successful connection or an exception
@@ -294,13 +289,18 @@ public class HostService {
                                 break;
                             case STATE_NONE:
                                 try {
+                                    quit = true;
                                     socket.close();
+                                    mmServerSocket.close();
                                 } catch (IOException e) {
                                     Log.e(TAG, "Could not close unwanted socket", e);
                                 }
                                 break;
                         }
                     }
+                }
+                if (quit) {
+                    break;
                 }
             }
             Log.i(TAG, "END mAcceptThread");

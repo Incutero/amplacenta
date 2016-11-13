@@ -197,7 +197,7 @@ public class HostFragment extends Fragment {
 
         // Check that there's actually something to send
         if (message.length() > 0) {
-            // Get the message bytes and tell the GuestService to write
+            // Get the message bytes and tell the HostService to write
             byte[] send = message.getBytes();
             hostService.write(send);
 
@@ -268,12 +268,11 @@ public class HostFragment extends Fragment {
                     switch (msg.arg1) {
                         case HostService.STATE_LISTEN:
                             setStatus(getString(R.string.host_title_connected_to, mConnectedDeviceNames.size()));
-                            mConversationArrayAdapter.clear();
                             break;
                         case HostService.STATE_CONNECTING:
                             setStatus(R.string.title_connecting);
                             break;
-                        case GuestService.STATE_NONE:
+                        case HostService.STATE_NONE:
                             setStatus(R.string.title_not_connected);
                             break;
                     }
