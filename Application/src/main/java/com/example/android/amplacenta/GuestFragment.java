@@ -1,4 +1,20 @@
-package com.example.android.bluetoothchat;
+/*
+ * Copyright (C) 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.example.android.amplacenta;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -26,13 +42,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.List;
-import java.util.ArrayList;
-
 import com.example.android.common.logger.Log;
 
-public class HostFragment extends Fragment {
-    private static final String TAG = "HostFragment";
+/**
+ * This fragment controls Bluetooth to communicate with other devices.
+ */
+public class GuestFragment extends Fragment {
+
+    private static final String TAG = "GuestFragment";
 
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE_INSECURE = 1;
@@ -44,9 +61,9 @@ public class HostFragment extends Fragment {
     private Button mSendButton;
 
     /**
-     * Name of the connected devices
+     * Name of the connected device
      */
-    private List<String> mConnectedDeviceNames;
+    private String partyHostName = null;
 
     /**
      * Array adapter for the conversation thread
@@ -63,11 +80,10 @@ public class HostFragment extends Fragment {
      */
     private BluetoothAdapter mBluetoothAdapter = null;
 
-    private HostService hostService = null;
-
-    public HostFragment() {
-        this.mConnectedDeviceNames = new ArrayList<String>();
-    }
+    /**
+     * Member object for the chat services
+     */
+    private GuestService guestService = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -84,25 +100,26 @@ public class HostFragment extends Fragment {
         }
     }
 
+
     @Override
     public void onStart() {
         super.onStart();
         // If BT is not on, request that it be enabled.
-        // setupChat() will then be called during onActivityResult
+        // joinParty() will then be called during onActivityResult
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
             // Otherwise, setup the chat session
-        } else if (hostService == null) {
-            setupParty();
+        } else if (guestService == null) {
+            joinParty();
         }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (hostService != null) {
-            hostService.stop();
+        if (guestService != null) {
+            guestService.stop();
         }
     }
 
@@ -113,11 +130,11 @@ public class HostFragment extends Fragment {
         // Performing this check in onResume() covers the case in which BT was
         // not enabled during onStart(), so we were paused to enable it...
         // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
-        if (hostService != null) {
+        if (guestService != null) {
             // Only if the state is STATE_NONE, do we know that we haven't started already
-            if (hostService.getState() == hostService.STATE_NONE) {
-                // Start the party
-                hostService.start();
+            if (guestService.getState() == GuestService.STATE_NONE) {
+                // Start the Bluetooth chat services
+                guestService.start();
             }
         }
     }
@@ -136,10 +153,10 @@ public class HostFragment extends Fragment {
     }
 
     /**
-     * Set up the UI and background operations for the party.
+     * Set up the UI and background operations for chat.
      */
-    private void setupParty() {
-        Log.d(TAG, "setupParty()");
+    private void joinParty() {
+        Log.d(TAG, "joinParty()");
 
         // Initialize the array adapter for the conversation thread
         mConversationArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.message);
@@ -162,13 +179,12 @@ public class HostFragment extends Fragment {
             }
         });
 
-        // Initialize the BluetoothChatService to perform bluetooth connections
-        hostService = new HostService(getActivity(), mHandler);
+        // Initialize the GuestService to perform bluetooth connections
+        guestService = new GuestService(getActivity(), mHandler);
 
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer("");
     }
-
 
     /**
      * Makes this device discoverable.
@@ -189,16 +205,16 @@ public class HostFragment extends Fragment {
      */
     private void sendMessage(String message) {
         // Check that we're actually connected before trying anything
-        if (hostService.getState() == HostService.STATE_NONE || hostService.numConnections() <= 0) {
-            Toast.makeText(getActivity(), R.string.host_cannot_send_message, Toast.LENGTH_SHORT).show();
+        if (guestService.getState() != GuestService.STATE_CONNECTED) {
+            Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Check that there's actually something to send
         if (message.length() > 0) {
-            // Get the message bytes and tell the BluetoothChatService to write
+            // Get the message bytes and tell the GuestService to write
             byte[] send = message.getBytes();
-            hostService.write(send);
+            guestService.write(send);
 
             // Reset out string buffer to zero and clear the edit text field
             mOutStringBuffer.setLength(0);
@@ -256,7 +272,7 @@ public class HostFragment extends Fragment {
     }
 
     /**
-     * The Handler that gets information back from the HostService
+     * The Handler that gets information back from the GuestService
      */
     private final Handler mHandler = new Handler() {
         @Override
@@ -265,14 +281,15 @@ public class HostFragment extends Fragment {
             switch (msg.what) {
                 case Constants.MESSAGE_STATE_CHANGE:
                     switch (msg.arg1) {
-                        case HostService.STATE_LISTEN:
-                            setStatus(getString(R.string.host_title_connected_to, mConnectedDeviceNames.size()));
+                        case GuestService.STATE_CONNECTED:
+                            setStatus(getString(R.string.title_connected_to, partyHostName));
                             mConversationArrayAdapter.clear();
                             break;
-                        case BluetoothChatService.STATE_CONNECTING:
+                        case GuestService.STATE_CONNECTING:
                             setStatus(R.string.title_connecting);
                             break;
-                        case BluetoothChatService.STATE_NONE:
+                        case GuestService.STATE_LISTEN:
+                        case GuestService.STATE_NONE:
                             setStatus(R.string.title_not_connected);
                             break;
                     }
@@ -287,18 +304,18 @@ public class HostFragment extends Fragment {
                     byte[] readBuf = (byte[]) msg.obj;
                     // construct a string from the valid bytes in the buffer
                     String readMessage = new String(readBuf, 0, msg.arg1);
-                    mConversationArrayAdapter.add(mConnectedDeviceNames.size() + ": " + readMessage);
+                    mConversationArrayAdapter.add(partyHostName + ":  " + readMessage);
                     break;
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
-                    mConnectedDeviceNames.add(msg.getData().getString(Constants.DEVICE_NAME));
-                    if (activity != null) {
+                    partyHostName = msg.getData().getString(Constants.DEVICE_NAME);
+                    if (null != activity) {
                         Toast.makeText(activity, "Connected to "
-                                + mConnectedDeviceNames, Toast.LENGTH_SHORT).show();
+                                + partyHostName, Toast.LENGTH_SHORT).show();
                     }
                     break;
                 case Constants.MESSAGE_TOAST:
-                    if (activity != null) {
+                    if (null != activity) {
                         Toast.makeText(activity, msg.getData().getString(Constants.TOAST),
                                 Toast.LENGTH_SHORT).show();
                     }
@@ -312,16 +329,14 @@ public class HostFragment extends Fragment {
             case REQUEST_CONNECT_DEVICE_INSECURE:
                 // When DeviceListActivity returns with a device to connect
                 if (resultCode == Activity.RESULT_OK) {
-                    if (!connectDevice(data)) {
-                        Toast.makeText(getActivity(), R.string.connection_busy, Toast.LENGTH_SHORT).show();
-                    }
+                    connectDevice(data);
                 }
                 break;
             case REQUEST_ENABLE_BT:
                 // When the request to enable Bluetooth returns
                 if (resultCode == Activity.RESULT_OK) {
                     // Bluetooth is now enabled, so set up a chat session
-                    setupParty();
+                    joinParty();
                 } else {
                     // User did not enable Bluetooth or an error occurred
                     Log.d(TAG, "BT not enabled");
@@ -335,16 +350,16 @@ public class HostFragment extends Fragment {
     /**
      * Establish connection with other divice
      *
-     * @param data An {@link Intent} with {@link DeviceListActivity#EXTRA_DEVICE_ADDRESS} extra.
+     * @param data   An {@link Intent} with {@link DeviceListActivity#EXTRA_DEVICE_ADDRESS} extra.
      */
-    private boolean connectDevice(Intent data) {
+    private void connectDevice(Intent data) {
         // Get the device MAC address
         String address = data.getExtras()
                 .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
-        return hostService.connect(device);
+        guestService.connect(device);
     }
 
     @Override
@@ -369,4 +384,5 @@ public class HostFragment extends Fragment {
         }
         return false;
     }
+
 }

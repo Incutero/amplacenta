@@ -1,4 +1,4 @@
-package com.example.android.bluetoothchat;
+package com.example.android.amplacenta;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -15,10 +15,10 @@ public class SelectLayoutActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.select_layout);
 
-        Button masterButton = (Button) findViewById(R.id.master_button);
-        Button slaveButton = (Button) findViewById(R.id.slave_button);
+        Button hostButton = (Button) findViewById(R.id.host_button);
+        Button guestButton = (Button) findViewById(R.id.guest_button);
 
-        masterButton.setOnClickListener(new View.OnClickListener() {
+        hostButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Intent intent = new Intent(SelectLayoutActivity.this, MainActivity.class);
                 intent.putExtra(LAYOUT_TYPE, true);
@@ -26,7 +26,7 @@ public class SelectLayoutActivity extends Activity {
             }
         });
 
-        slaveButton.setOnClickListener(new View.OnClickListener() {
+        guestButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Intent intent = new Intent(SelectLayoutActivity.this, MainActivity.class);
                 intent.putExtra(LAYOUT_TYPE, false);

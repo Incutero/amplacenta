@@ -4,14 +4,14 @@
     android:layout_height="match_parent">
 
     <Button
-        android:text="Master"
+        android:text="@string/become_host"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/master_button" />
+        android:id="@+id/host_button" />
 
     <Button
-        android:text="Slave"
+        android:text="@string/become_guest"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/slave_button" />
+        android:id="@+id/guest_button" />
 </LinearLayout>
